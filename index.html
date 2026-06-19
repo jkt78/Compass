@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPASS v1.0 — Differential Diagnosis Instrument</title>
+<style>
+:root{
+  --navy:#1B3A6B;--teal:#1A7A8A;--gold:#8B6914;--alert:#A81010;
+  --bg:#F8F6F0;--card:#FFFFFF;--border:#D8D4CC;--text:#1A1A1A;
+  --muted:#5A5650;--light:#EEE9E0;--green:#1A6B3A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;line-height:1.6}
+.app{max-width:780px;margin:0 auto;padding:0 16px 60px}
+
+/* Header */
+.hdr{background:var(--navy);color:#fff;padding:20px 24px;border-radius:0 0 8px 8px;margin-bottom:24px;text-align:center}
+.hdr h1{font-size:1.6em;letter-spacing:.04em;margin-bottom:4px}
+.hdr .sub{font-size:.82em;opacity:.85;font-style:italic}
+.hdr .badge{display:inline-block;margin-top:10px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 14px;font-size:.72em;font-family:Arial,sans-serif;letter-spacing:.06em}
+
+/* Progress */
+.progress-wrap{margin-bottom:20px}
+.progress-label{font-family:Arial,sans-serif;font-size:.78em;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--teal);border-radius:3px;transition:width .4s}
+.step-dots{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.step-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background .3s}
+.step-dot.done{background:var(--teal)}
+.step-dot.current{background:var(--navy);box-shadow:0 0 0 2px var(--navy),0 0 0 4px rgba(27,58,107,.2)}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:28px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section-tag{font-family:Arial,sans-serif;font-size:.7em;letter-spacing:.1em;color:var(--teal);text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.section-title{font-size:1.35em;font-weight:bold;color:var(--navy);margin-bottom:4px}
+.section-sub{font-size:.95em;color:var(--muted);margin-bottom:16px;font-style:italic}
+.note-box{background:var(--light);border-left:3px solid var(--teal);padding:12px 16px;border-radius:0 6px 6px 0;font-size:.88em;margin-bottom:20px;color:#3A3630}
+.scale-note{background:#F0F4F8;border:1px solid #C8D8E8;border-radius:6px;padding:10px 14px;font-size:.82em;font-family:Arial,sans-serif;margin-bottom:20px;color:var(--navy)}
+
+/* Questions */
+.q-block{margin-bottom:24px}
+.q-label{font-size:.95em;margin-bottom:10px;font-weight:bold;color:#2A2A2A}
+.q-label .q-num{color:var(--teal);margin-right:6px;font-size:.85em}
+.q-required{color:var(--alert);font-size:.8em;margin-left:4px}
+.q-sub{font-size:.82em;color:var(--muted);margin-top:-6px;margin-bottom:8px;font-style:italic}
+
+/* Radio/Checkbox */
+.opt-list{display:flex;flex-direction:column;gap:8px}
+.opt-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;transition:border-color .2s,background .2s;background:#FAFAF8}
+.opt-item:hover{border-color:var(--teal);background:#F0F8FA}
+.opt-item.selected{border-color:var(--navy);background:#EEF2FA}
+.opt-item input[type=radio],.opt-item input[type=checkbox]{margin-top:2px;accent-color:var(--navy);width:16px;height:16px;flex-shrink:0}
+.opt-item label{cursor:pointer;font-size:.93em;line-height:1.4}
+
+/* Likert grid */
+.likert-block{margin-bottom:16px}
+.likert-block .q-text{font-size:.9em;margin-bottom:6px;font-weight:bold}
+.likert-row{display:flex;gap:6px}
+.likert-btn{flex:1;padding:8px 4px;border:1.5px solid var(--border);border-radius:6px;background:#FAFAF8;cursor:pointer;text-align:center;font-family:Arial,sans-serif;font-size:.85em;color:var(--muted);transition:all .2s;min-width:44px}
+.likert-btn:hover{border-color:var(--teal);color:var(--navy)}
+.likert-btn.sel{border-color:var(--navy);background:var(--navy);color:#fff;font-weight:bold}
+.likert-btn .lk-score{display:block;font-size:1.1em;font-weight:bold}
+.likert-btn .lk-label{display:block;font-size:.68em;margin-top:2px}
+.likert-header{display:flex;gap:6px;margin-bottom:4px}
+.likert-header-cell{flex:1;text-align:center;font-size:.7em;font-family:Arial,sans-serif;color:var(--muted)}
+
+/* Domain (occurrence + impact) */
+.domain-block{border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;background:#FAFAF8}
+.domain-title{font-size:.92em;font-weight:bold;margin-bottom:12px;color:#2A2A2A}
+.domain-row{display:flex;gap:16px;flex-wrap:wrap}
+.domain-col{flex:1;min-width:140px}
+.domain-col-label{font-size:.75em;font-family:Arial,sans-serif;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.domain-opts{display:flex;gap:4px}
+.domain-btn{flex:1;padding:6px 2px;border:1.5px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;text-align:center;font-size:.8em;font-family:Arial,sans-serif;transition:all .2s}
+.domain-btn:hover{border-color:var(--teal)}
+.domain-btn.sel{border-color:var(--navy);background:var(--navy);color:#fff;font-weight:bold}
+
+/* Section header inside section */
+.q-section-header{margin:16px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--light)}
+.q-section-header h3{font-size:1em;color:var(--navy);font-family:Arial,sans-serif;font-weight:700}
+
+/* Number input */
+.num-input{padding:10px 14px;border:1.5px solid var(--border);border-radius:7px;font-size:.95em;width:120px;font-family:Georgia,serif}
+.num-input:focus{outline:none;border-color:var(--navy)}
+
+/* Safety modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:12px;max-width:520px;width:100%;padding:28px;border-top:5px solid var(--alert)}
+.modal h2{color:var(--alert);font-size:1.2em;margin-bottom:12px}
+.modal p{font-size:.93em;margin-bottom:12px;line-height:1.6}
+.crisis-box{background:#FFF8F8;border:1.5px solid var(--alert);border-radius:8px;padding:16px;margin:16px 0}
+.crisis-box strong{display:block;color:var(--alert);font-size:.85em;font-family:Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.crisis-item{font-size:1.05em;font-weight:bold;color:#5A0000;margin-bottom:4px}
+.crisis-sub{font-size:.82em;color:var(--muted)}
+.btn-continue{display:block;width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.95em;cursor:pointer;margin-top:16px;font-family:Georgia,serif}
+.btn-continue:hover{background:#0F2655}
+
+/* Navigation */
+.nav-bar{display:flex;gap:12px;margin-top:24px;align-items:center;flex-wrap:wrap}
+.btn{padding:12px 28px;border:none;border-radius:7px;font-size:.95em;cursor:pointer;font-family:Georgia,serif;transition:all .2s}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:#0F2655}
+.btn-back{background:transparent;border:1.5px solid var(--border);color:var(--muted)}
+.btn-back:hover{border-color:var(--navy);color:var(--navy)}
+.btn-skip{background:transparent;border:none;color:var(--muted);font-size:.85em;padding:8px 12px}
+.nav-hint{font-family:Arial,sans-serif;font-size:.78em;color:var(--muted);margin-left:auto}
+
+/* Results */
+.results-page{display:none}
+.results-page.active{display:block}
+.prevalidation-notice{background:#FFF8E8;border:1.5px solid var(--gold);border-radius:8px;padding:16px;margin-bottom:20px;font-size:.82em;font-family:Arial,sans-serif;color:#5A4200}
+.prevalidation-notice strong{display:block;margin-bottom:6px;font-size:.9em;letter-spacing:.04em;text-transform:uppercase}
+.standard-of-care{background:#F0F8F0;border:1.5px solid var(--green);border-radius:8px;padding:16px;margin-bottom:20px;font-size:.9em}
+.standard-of-care strong{color:var(--green);display:block;margin-bottom:8px}
+.omo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:520px){.omo-grid{grid-template-columns:1fr}}
+.omo-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px}
+.omo-card-title{font-family:Arial,sans-serif;font-size:.72em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.omo-card-value{font-size:1.3em;font-weight:bold;color:var(--navy)}
+.omo-card-sub{font-size:.8em;color:var(--muted);margin-top:4px}
+.omo-card.full{grid-column:1/-1}
+.signal-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--light);font-size:.9em}
+.signal-row:last-child{border-bottom:none}
+.signal-name{font-weight:bold}
+.signal-badge{padding:3px 12px;border-radius:12px;font-size:.8em;font-family:Arial,sans-serif;font-weight:700}
+.sig-LOW{background:#EEF2EE;color:#2A4A2A}
+.sig-MODERATE{background:#FFF4DC;color:#7A5000}
+.sig-ELEVATED{background:#FFEAEA;color:#7A0000}
+.flag-list{list-style:none}
+.flag-item{padding:10px 14px;border-left:4px solid var(--alert);background:#FFF8F8;border-radius:0 6px 6px 0;margin-bottom:10px;font-size:.87em;line-height:1.5}
+.flag-item.flag-immediate{border-color:#600000;background:#FFF0F0;font-weight:bold}
+.care-tier-block{text-align:center;padding:20px;border-radius:10px;margin-bottom:20px}
+.ct-1{background:#F0F8F0;border:2px solid var(--green)}
+.ct-2{background:#FFF8EE;border:2px solid var(--gold)}
+.ct-3{background:#FFF0F0;border:2px solid var(--alert)}
+.ct-label{font-size:.75em;font-family:Arial,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.ct-1 .ct-label{color:var(--green)}.ct-2 .ct-label{color:var(--gold)}.ct-3 .ct-label{color:var(--alert)}
+.ct-num{font-size:3em;font-weight:bold;margin-bottom:4px}
+.ct-1 .ct-num{color:var(--green)}.ct-2 .ct-num{color:var(--gold)}.ct-3 .ct-num{color:var(--alert)}
+.ct-rationale{font-size:.85em;max-width:500px;margin:0 auto}
+.ts{font-family:Arial,sans-serif;font-size:.78em;color:var(--muted);margin-bottom:16px}
+.print-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.btn-print{background:var(--teal);color:#fff;padding:12px 24px;border:none;border-radius:7px;cursor:pointer;font-family:Georgia,serif;font-size:.95em}
+.btn-restart{background:transparent;border:1.5px solid var(--border);color:var(--muted);padding:12px 24px;border-radius:7px;cursor:pointer;font-family:Georgia,serif;font-size:.95em}
+.score-table{width:100%;border-collapse:collapse;font-size:.85em;margin-top:8px}
+.score-table th{background:var(--navy);color:#fff;padding:7px 10px;text-align:left;font-family:Arial,sans-serif;font-size:.8em}
+.score-table td{padding:7px 10px;border-bottom:1px solid var(--light)}
+.score-table tr:nth-child(even) td{background:var(--light)}
+
+/* Intro */
+.intro-hero{text-align:center;padding:20px 0}
+.intro-hero h2{font-size:1.5em;color:var(--navy);margin-bottom:8px}
+.intro-hero p{font-size:.95em;color:var(--muted);max-width:580px;margin:0 auto 20px}
+.intro-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:20px 0;font-size:.85em}
+.meta-item{background:var(--light);padding:10px 14px;border-radius:6px}
+.meta-item strong{display:block;color:var(--navy);font-size:.8em;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.btn-start{display:block;width:100%;max-width:320px;margin:20px auto 0;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:1.1em;cursor:pointer;font-family:Georgia,serif}
+.validation-msg{color:var(--alert);font-size:.82em;font-family:Arial,sans-serif;margin-top:8px;display:none}
+
+@media print{
+  .nav-bar,.print-actions,.progress-wrap,.hdr,.step-dots,.modal-overlay{display:none!important}
+  .card{box-shadow:none;border:1px solid #ccc}
+  body{background:#fff}
+  .results-page{display:block!important}
+  .section-form{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+  <div style="font-family:Arial,sans-serif;font-size:.75em;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin-bottom:4px">PRISMqd / Pulse Advisory Group / Torrez Systems Lab</div>
+  <h1>COMPASS</h1>
+  <div class="sub">Cycle &bull; Occupational/Life Adversity &bull; Mood Pattern &bull; Perimenopause &bull; Adversity/Trauma &bull; Symptom Severity &bull; Safety</div>
+  <div class="sub" style="margin-top:4px">Differential Diagnosis and Lifetime Adversity Tracking Instrument</div>
+  <span class="badge">Version 1.0 &nbsp;&bull;&nbsp; Pre-Validation Framework &nbsp;&bull;&nbsp; June 2026</span>
+</div>
+
+<div id="progressWrap" class="progress-wrap" style="display:none">
+  <div class="progress-label">
+    <span id="progressLabel">Section A of 12</span>
+    <span id="progressPct">0%</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<!-- Modal: Safety Gate -->
+<div class="modal-overlay" id="safetyModal" style="display:none">
+  <div class="modal">
+    <h2>&#9888; Support Resources</h2>
+    <p>You indicated that you are currently experiencing thoughts of suicide or self-harm. Your provider needs to know this today before you leave.</p>
+    <div class="crisis-box">
+      <strong>If you are in crisis right now:</strong>
+      <div class="crisis-item">988 Suicide and Crisis Lifeline</div>
+      <div class="crisis-sub">Call or text <strong>988</strong> (United States)</div>
+      <br>
+      <div class="crisis-item">Crisis Text Line</div>
+      <div class="crisis-sub">Text <strong>HOME</strong> to <strong>741741</strong></div>
+    </div>
+    <p style="font-size:.85em;color:var(--muted)">Your form response has been noted. You may continue completing the form — please speak with your provider about this before leaving today.</p>
+    <button class="btn-continue" onclick="closeSafetyModal()">I understand — continue with form</button>
+  </div>
+</div>
+
+<!-- Sections container -->
+<div id="sectionContainer"></div>
+
+<!-- Results page -->
+<div id="resultsPage" class="results-page">
+  <div class="card">
+    <div class="section-tag">COMPASS v1.0 Results</div>
+    <div class="section-title">Clinical Pattern Profile</div>
+    <div id="resultsTimestamp" class="ts"></div>
+    
+    <div class="prevalidation-notice">
+      <strong>&#9888; Pre-Validation Status — Required Notice</strong>
+      COMPASS v1.0 is a pre-validation screening framework. It is NOT a validated diagnostic instrument. All differential signals are hypothesis-generating. They do not constitute a diagnosis and must not be used as a substitute for clinical evaluation. This instrument requires prospective validation prior to clinical diagnostic use. Version 1.0 | June 2026 | Torrez J. | PRISMqd.
+    </div>
+    
+    <div class="standard-of-care">
+      <strong>&#9432; Understanding Your Results — For Patients</strong>
+      A provider who reviews these results in their entirety — assessing all domains, not only the sections that seem most relevant — is meeting the minimum standard of comprehensive care. If your provider has not assessed all areas of this instrument and has not independently confirmed your diagnoses (rather than relying solely on diagnoses assigned by others, particularly in conditions with known high misdiagnosis rates), you have not yet received a full differential evaluation. You have the right to ask for that evaluation. The conditions this instrument screens for are frequently misdiagnosed; an assigned diagnosis is not always a confirmed diagnosis.
+    </div>
+    
+    <div id="safetyResultBanner" style="display:none" class="flag-item flag-immediate" style="margin-bottom:20px">
+      &#9888; ACTIVE SAFETY CONCERN: You indicated current thoughts of suicide or self-harm. Please speak with your provider today before leaving. If you are in immediate crisis: call or text 988, or text HOME to 741741.
+    </div>
+    
+    <div id="careTierBlock"></div>
+    
+    <div class="omo-grid" id="omoGrid"></div>
+    
+    <div class="card" style="margin-top:0;border:1px solid var(--border)">
+      <div class="section-tag">Differential Signal Profile</div>
+      <div style="font-size:.82em;color:var(--muted);margin-bottom:12px;font-family:Arial,sans-serif">Pattern signals are hypothesis-generating. They do not constitute diagnoses. Signals indicate areas warranting clinical evaluation.</div>
+      <div id="differentialProfile"></div>
+    </div>
+    
+    <div class="card" style="margin-top:0;border:1px solid var(--border)" id="redFlagsCard">
+      <div class="section-tag">Clinical Alerts</div>
+      <ul class="flag-list" id="flagList"></ul>
+    </div>
+    
+    <div class="card" style="margin-top:0;border:1px solid var(--border)">
+      <div class="section-tag">Score Summary</div>
+      <table class="score-table" id="scoreSummaryTable"></table>
+    </div>
+    
+    <div class="print-actions">
+      <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
+      <button class="btn-restart" onclick="restartForm()">Start New Form</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════════════════════
+// COMPASS v1.0 — Interactive Form + Scoring Engine
+// Pre-validation framework | Torrez J. | PRISMqd 2026
+// ════════════════════════════════════════════════════════════
+
+const SECTIONS = [{"id":"intro","title":"COMPASS v1.0","subtitle":"Differential Diagnosis and Lifetime Adversity Tracking Instrument","type":"intro"},{"id":"A","part":1,"title":"Section A","subtitle":"Reproductive and Menstrual History","questions":[{"id":"A2","text":"Are you currently pregnant or breastfeeding?","type":"radio","options":["Yes","No","Not sure"]},{"id":"A4","text":"Have you had any of the following procedures? (Select all that apply)","type":"checkbox","options":["Hysterectomy (uterus removed)","Oophorectomy (one or both ovaries removed)","Endometrial ablation","None of the above"]},{"id":"A5","text":"Are you currently using hormonal birth control?","type":"radio","options":["No","Yes \u2014 Combined pill","Yes \u2014 Progestin-only pill","Yes \u2014 Hormonal IUD","Yes \u2014 Implant","Yes \u2014 Injection","Yes \u2014 Patch","Yes \u2014 Vaginal ring"]},{"id":"A6","text":"Are you currently using hormone therapy (HRT or MHT)?","type":"radio","options":["No","Yes"]},{"id":"A9","text":"In the past 12 months, have you noticed changes in your cycle? (Select all that apply)","type":"checkbox","options":["Cycles are more irregular than before","Cycles are closer together","Cycles are further apart","Cycles have become much lighter or heavier","No significant changes","N/A \u2014 I do not have regular periods"]}]},{"id":"B","part":1,"title":"Section B","subtitle":"Symptom Timing","note":"These timing questions are among the most clinically important. Please answer as carefully as you can. If you are unsure, mark \"Not sure\" rather than guessing.","questions":[{"id":"B1","text":"When do your symptoms typically BEGIN each month?","type":"radio","options":["About 1 week before my period starts","About 2 weeks before my period starts (around ovulation or shortly after)","Right around the time my period starts","I cannot identify a clear starting point","My symptoms do not follow any pattern related to my cycle"]},{"id":"B2","text":"When do your symptoms typically IMPROVE or GO AWAY?","type":"radio","options":["Within 1\u20132 days of my period starting","After my period ends","They improve somewhat but never fully go away","They do not clearly improve around my period","I am not sure"]},{"id":"B3","text":"In the WEEK IMMEDIATELY AFTER your period ends, how do you generally feel?","type":"radio","options":["Noticeably better or symptom-free \u2014 I feel like myself","Somewhat better but not symptom-free","About the same as before my period","I do not have clearly separated good days"]},{"id":"B4","text":"On average, how many SYMPTOM-FREE DAYS do you have each cycle?","type":"radio","options":["None","1\u20133 days","4\u20137 days","More than 7 days","Not sure"]},{"id":"B5","text":"Do your mood symptoms occur even in months when your period is late, very light, or absent?","type":"radio","options":["Symptoms always follow my cycle regardless of period characteristics","Symptoms are mainly linked to having a period","Symptoms occur regardless of whether I have a period that month","I am not sure"]}]},{"id":"C","part":1,"title":"Section C","subtitle":"Symptom Profile and Severity","note":"0 = Not present  |  1 = Mild (noticeable, minimal impact)  |  2 = Moderate (some interference)  |  3 = Severe (significantly interferes with daily life)","questions":[{"id":"C_luteal_header","type":"header","text":"PART C-1: Rate each symptom during the 1\u20132 WEEKS BEFORE your period."},{"id":"C1","text":"Sudden mood shifts, tearfulness, or increased emotional sensitivity","type":"likert4"},{"id":"C2","text":"Irritability, anger, or conflict with others","type":"likert4"},{"id":"C3","text":"Low mood, hopelessness, or self-critical thoughts","type":"likert4"},{"id":"C4","text":"Anxiety, tension, nervousness, or feeling on edge","type":"likert4"},{"id":"C5","text":"Decreased interest in activities you normally enjoy","type":"likert4"},{"id":"C6","text":"Difficulty concentrating or making decisions","type":"likert4"},{"id":"C7","text":"Fatigue or low energy despite adequate sleep","type":"likert4"},{"id":"C8","text":"Changes in appetite, food cravings, or overeating","type":"likert4"},{"id":"C9","text":"Sleeping too much or difficulty sleeping","type":"likert4"},{"id":"C10","text":"Feeling overwhelmed, out of control, or unable to cope","type":"likert4"},{"id":"C11","text":"Breast tenderness or swelling","type":"likert4"},{"id":"C12","text":"Bloating or feeling of increased weight","type":"likert4"},{"id":"C13","text":"Joint or muscle aches","type":"likert4"},{"id":"C14","text":"Headaches","type":"likert4"},{"id":"C_follicular_header","type":"header","text":"PART C-2: Rate the SAME symptoms during the WEEK AFTER your period ends. This comparison is critical for your provider."},{"id":"C15","text":"Sudden mood shifts, tearfulness, or increased emotional sensitivity","type":"likert4"},{"id":"C16","text":"Irritability, anger, or conflict with others","type":"likert4"},{"id":"C17","text":"Low mood, hopelessness, or self-critical thoughts","type":"likert4"},{"id":"C18","text":"Anxiety, tension, nervousness, or feeling on edge","type":"likert4"},{"id":"C19","text":"Decreased interest in activities you normally enjoy","type":"likert4"},{"id":"C20","text":"Difficulty concentrating or making decisions","type":"likert4"},{"id":"C21","text":"Fatigue or low energy","type":"likert4"},{"id":"C22","text":"Changes in appetite, food cravings, or overeating","type":"likert4"},{"id":"C23","text":"Sleeping too much or difficulty sleeping","type":"likert4"},{"id":"C24","text":"Feeling overwhelmed, out of control, or unable to cope","type":"likert4"},{"id":"C25","text":"Breast tenderness or swelling","type":"likert4"},{"id":"C26","text":"Bloating or feeling of increased weight","type":"likert4"},{"id":"C27","text":"Joint or muscle aches","type":"likert4"},{"id":"C28","text":"Headaches","type":"likert4"},{"id":"C29","text":"Do your mood symptoms significantly interfere with your work, school, relationships, or daily activities?","type":"radio","options":["Yes, regularly during the premenstrual period","Sometimes","They are uncomfortable but I can function through them","No"]}]},{"id":"D","part":1,"title":"Section D","subtitle":"Mood Patterns and Triggers","questions":[{"id":"D1","text":"When your mood becomes very low, irritable, or anxious, what usually seems to TRIGGER it? (Select all that apply)","type":"checkbox","options":["Arguments, criticism, or conflict with others","Fear of being abandoned, rejected, or left alone","It follows the pattern of my menstrual cycle, with or without a clear external trigger","It comes on with no obvious external cause","Reminders of past traumatic experiences","Major life stressors (loss, financial strain, work crisis)","Sleep loss"]},{"id":"D2","text":"How long do your most intense mood episodes typically last?","type":"radio","options":["Minutes to a few hours","Several hours to 1\u20132 days","Several days","1 week or longer","Variable: sometimes short, sometimes extended"]},{"id":"D3","text":"Between episodes of intense or very low mood, do you feel like your usual self?","type":"radio","options":["Yes, mostly \u2014 I have clear periods when I feel fine","Somewhat \u2014 there is always some level of underlying distress","Rarely \u2014 I do not feel like myself most of the time","I do not experience clearly separated episodes"]},{"id":"D4","text":"Have you ever had a period of days or more when you felt unusually energetic, needed much less sleep, had racing thoughts, spent money unplanned, or felt unusually confident, talkative, or euphoric?","type":"radio","options":["Yes","No","Not sure"]},{"id":"D5","text":"Do your mood episodes occur even during weeks when you are NOT approaching your period?","type":"radio","options":["Yes, frequently","Sometimes","Rarely \u2014 symptoms are almost entirely premenstrual","Never \u2014 symptoms are strictly premenstrual"]},{"id":"D6","text":"How would you describe your mood from day to day overall, outside of premenstrual changes?","type":"radio","options":["Mostly stable","Somewhat variable but manageable","Frequently shifting and hard to predict","Primarily determined by what is happening in my relationships"]}]},{"id":"E","part":1,"title":"Section E","subtitle":"Thoughts of Self-Harm or Suicide","safety":true,"note_patient":"Many people experience thoughts of self-harm or not wanting to be alive during difficult times. These questions are asked of all patients so your provider can offer the right support. Your honest answers help. All responses are part of your confidential clinical record.","questions":[{"id":"E1","text":"In the past 3 months, have you had thoughts of hurting yourself, not wanting to be alive, or wishing you could go to sleep and not wake up?","type":"radio","options":["No","Yes","I would prefer to discuss this with my provider"]},{"id":"E2","text":"When do these thoughts most commonly occur? (Select all that apply)","type":"checkbox","conditional":"E1=Yes","options":["Specifically in the 1\u20132 weeks before my period","Around the time my period starts","Most of the time, but worse before my period","They do not have a clear relationship to my cycle","During or after significant conflict, rejection, or abandonment","When I am reminded of past traumatic experiences","During periods of sustained low mood lasting more than a week","During periods of very high energy or agitation"]},{"id":"E3","text":"After your period starts, do these thoughts go away or significantly decrease?","type":"radio","conditional":"E1=Yes","options":["Yes \u2014 they mostly or completely resolve","Somewhat \u2014 they improve but do not fully go away","No \u2014 they do not clearly improve with my period","Not sure"]},{"id":"E4","text":"Currently (today), are you experiencing thoughts of suicide or self-harm?","type":"radio_safety","options":["No","Passive thoughts (wishing I weren't here / not wanting to wake up \u2014 no active plan)","Active thoughts without a plan","Active thoughts WITH a plan \u2014 Please speak with your provider before leaving today."]}]},{"id":"F","part":1,"title":"Section F","subtitle":"Perimenopausal and Hormonal Indicators","questions":[{"id":"F1","text":"Current age:","type":"number","min":18,"max":80},{"id":"F2","text":"In the past 12 months, how often have you had HOT FLASHES or sudden waves of heat?","type":"radio","options":["Never","1\u20133 times per month","Several times per week","Daily or more"]},{"id":"F3","text":"In the past 12 months, how often have you had NIGHT SWEATS significant enough to disrupt your sleep?","type":"radio","options":["Never","Occasionally","Several nights per week","Most nights"]},{"id":"F4","text":"Have you noticed new or worsening MEMORY DIFFICULTIES or BRAIN FOG not clearly cycle-related?","type":"radio","options":["Yes","No","Possibly \u2014 not sure"]},{"id":"F5","text":"Have you noticed VAGINAL DRYNESS, discomfort during intercourse, or changes in urinary urgency or frequency?","type":"radio","options":["Yes","No"]},{"id":"F6","text":"How would you describe your overall SLEEP pattern in the past 3 months?","type":"radio","options":["Normal for me","Somewhat disrupted but not severe","Significantly disrupted, but mainly premenstrual","Significantly disrupted most nights regardless of cycle phase"]}]},{"id":"G","part":1,"title":"Section G","subtitle":"Treatment History","questions":[{"id":"G1","text":"Have you ever used hormonal birth control SPECIFICALLY to manage mood or premenstrual symptoms?","type":"radio","options":["No","Yes \u2014 and symptoms improved","Yes \u2014 no change","Yes \u2014 symptoms worsened","Yes \u2014 mixed results"]},{"id":"G2","text":"Have you ever used a PROGESTIN-ONLY method (mini-pill, hormonal IUD, implant, injection)?","type":"radio","options":["No","Yes \u2014 symptoms improved","Yes \u2014 symptoms worsened","Yes \u2014 no change","Yes \u2014 not sure"]},{"id":"G3","text":"Have you ever used BIOIDENTICAL PROGESTERONE (oral micronized progesterone or topical cream)?","type":"radio","options":["No","Yes \u2014 symptoms improved","Yes \u2014 symptoms worsened","Yes \u2014 no change","Yes \u2014 mixed results"]},{"id":"G4","text":"Have you been prescribed ANTIDEPRESSANTS (SSRIs or SNRIs) for premenstrual, mood, or anxiety symptoms?","type":"radio","options":["No","Yes \u2014 improved","Yes \u2014 no response","Yes \u2014 worsened","Yes \u2014 partial response"]},{"id":"G5","text":"Have you been prescribed MOOD STABILIZERS (lithium, valproate, lamotrigine, carbamazepine, or others)?","type":"radio","options":["No","Yes \u2014 improved","Yes \u2014 no response","Yes \u2014 worsened","Yes \u2014 partial response"]},{"id":"G6","text":"Have you been prescribed ANTIPSYCHOTIC medications?","type":"radio","options":["No","Yes \u2014 improved","Yes \u2014 no response","Yes \u2014 worsened"]},{"id":"G7","text":"Have you ever had your cycle deliberately suppressed with a GnRH AGONIST (leuprolide/Lupron or nafarelin)?","type":"radio","options":["No","Yes \u2014 symptoms completely resolved","Yes \u2014 significant improvement","Yes \u2014 partial improvement","Yes \u2014 no change","Yes \u2014 worsened"]},{"id":"G8","text":"Have you received any of the following diagnoses? (Select all that apply)","type":"checkbox","options":["PMS","PMDD","Borderline Personality Disorder (BPD)","Bipolar Disorder Type I","Bipolar Disorder Type II","Bipolar spectrum / cyclothymia / NOS","Major Depressive Disorder","Generalized Anxiety Disorder","PTSD","Complex PTSD / C-PTSD","Perimenopausal or menopausal mood disorder","Hypothyroidism or thyroid disorder","None of the above"]},{"id":"G9","text":"Have you been prescribed CHOLESTEROL-LOWERING MEDICATION (a statin or other lipid-lowering therapy)?","type":"radio","options":["No","Yes"]},{"id":"G9a","text":"If a statin: which type?","type":"radio","conditional":"G9=Yes","options":["Simvastatin (Zocor)","Atorvastatin (Lipitor)","Lovastatin (Altoprev, Mevacor)","Fluvastatin (Lescol)","Rosuvastatin (Crestor)","Pravastatin (Pravachol)","Pitavastatin (Livalo)","I am not sure of the type"]}]},{"id":"H","part":2,"title":"Section H","subtitle":"Expanded Adverse Childhood Experiences (wACE)","note":"These questions ask about experiences BEFORE AGE 18. A single event and a repeated or ongoing pattern are different \u2014 this form captures both. Your answers are confidential. You do not need to answer any question that makes you uncomfortable.","scale_note":"No = 0  |  Yes, once = 1  |  Yes, several times = 2  |  Yes, regularly or sustained (months or years) = 3","questions":[{"id":"H1","text":"A parent or adult in your home often swore at you, insulted you, put you down, or humiliated you; or acted in a way that made you afraid you might be physically hurt.","type":"likert4ace"},{"id":"H2","text":"A parent or adult in your home pushed, grabbed, slapped, or threw something at you; or hit you hard enough to leave marks or cause injury.","type":"likert4ace"},{"id":"H3","text":"An adult or person at least 5 years older than you touched or fondled you in a sexual way, or asked or pressured you to touch them sexually.","type":"likert4ace"},{"id":"H4","text":"You often felt that no one in your family loved you or thought you were important; or family members did not look out for each other, feel close, or support each other.","type":"likert4ace"},{"id":"H5","text":"You often did not have enough to eat, had to wear dirty clothes, or had no one to protect you; or your parents were too impaired to take care of you.","type":"likert4ace"},{"id":"H6","text":"Your parents were separated or divorced.","type":"likert4ace"},{"id":"H7","text":"Your mother or stepmother was pushed, grabbed, slapped, kicked, bitten, hit with a fist, or threatened or hurt with a weapon.","type":"likert4ace"},{"id":"H8","text":"You lived with someone who was a problem drinker, alcoholic, or who used street drugs.","type":"likert4ace"},{"id":"H9","text":"A household member was depressed, mentally ill, or attempted suicide.","type":"likert4ace"},{"id":"H10","text":"A household member went to prison or jail.","type":"likert4ace"},{"id":"H11","text":"For any item marked Yes \u2014 approximately how old were you when it FIRST occurred?","type":"radio","options":["Under age 5","Ages 5 to 10","Ages 11 to 17","Began before age 5 and continued throughout childhood","Not applicable"]},{"id":"H12","text":"Were any of the childhood experiences above caused by a PARENT, CAREGIVER, OR PERSON IN A POSITION OF TRUST OR AUTHORITY over you?","type":"radio","options":["No","Yes \u2014 on one or a few occasions","Yes \u2014 repeatedly or as a sustained pattern"]}]},{"id":"I","part":2,"title":"Section I","subtitle":"Trauma Pattern Screen \u2014 PTSD and Complex PTSD","note":"These questions ask about experiences related to traumatic events. Some questions may bring up difficult memories. You do not have to complete this section in one sitting. If you feel distressed at any point, please let your provider know.","scale_note":"0 = Not at all  |  1 = Occasionally  |  2 = Often  |  3 = Almost all the time","questions":[{"id":"I_ptsd_header","type":"header","text":"PTSD Symptom Cluster \u2014 How often have you experienced the following in the PAST MONTH?"},{"id":"P1","text":"Unwanted vivid memories, flashbacks, or nightmares about traumatic events","type":"likert4"},{"id":"P2","text":"Strong distress or physical reactions when reminded of traumatic events","type":"likert4"},{"id":"P3","text":"Deliberately avoiding thoughts, feelings, or reminders of traumatic events","type":"likert4"},{"id":"P4","text":"Feeling on guard, hypervigilant, or easily startled; difficulty relaxing or feeling safe","type":"likert4"},{"id":"P5","text":"Feeling emotionally numb, cut off from feelings, or unable to feel positive emotions","type":"likert4"},{"id":"P6","text":"Significant difficulty with daily life, work, or relationships because of these experiences","type":"likert4"},{"id":"I_dso_header","type":"header","text":"Complex PTSD \u2014 Disturbances in Self-Organization \u2014 These ask about long-standing patterns, not just reactions to specific events."},{"id":"C1_i","text":"Strong emotional reactions that feel out of proportion to the situation, or difficulty calming down once upset","type":"likert4"},{"id":"C2_i","text":"Feeling empty, worthless, permanently damaged, or that you are fundamentally different from other people","type":"likert4"},{"id":"C3_i","text":"Persistent feelings of guilt, shame, or believing you are responsible for bad things that happened to you","type":"likert4"},{"id":"C4_i","text":"Feeling that closeness with others is dangerous or frightening \u2014 even with people who have not hurt you","type":"likert4"},{"id":"C5_i","text":"Difficulty trusting others; expecting to be hurt by people you depend on; avoiding close relationships","type":"likert4"},{"id":"C6_i","text":"Feeling detached from yourself; watching yourself from outside; or feeling your life is unreal or distant","type":"likert4"},{"id":"IB1","text":"The most significant traumatic experiences I have had in my life have involved:","type":"radio","options":["Single events (things that happened once)","Repeated or chronic exposure (things that happened many times over months or years)","Both \u2014 some single events and some repeated or chronic exposure","I have not had traumatic experiences"]},{"id":"IB2","text":"These experiences were primarily caused by:","type":"radio","options":["Another person or people (interpersonal trauma)","Events, accidents, illness, or natural disaster (non-interpersonal trauma)","Both types","Not applicable"]},{"id":"IB3","text":"Were any of the most significant traumatic experiences caused by a CAREGIVER, PARENT, PARTNER, OR PERSON IN A POSITION OF POWER OR TRUST over you?","type":"radio","options":["No","Yes \u2014 on one or a few occasions","Yes \u2014 repeatedly or as a sustained pattern"]}]},{"id":"J","part":3,"title":"Section J","subtitle":"Group A \u2014 Life and Relational Adversity","note":"Group A applies to ALL patients regardless of employment history. For each area, rate how often it occurred AND how much it affected your mental or emotional health.","scale_note":"Occurrence: 0=Never  1=Once  2=Several times  3=Regularly/Sustained  |  Impact: 0=None  1=Mild  2=Moderate  3=Significant","questions":[{"id":"JA1","text":"A1. Intimate Partner Violence and Relationship Abuse (physical, psychological, sexual, or financial abuse by a partner or intimate person)","type":"domain"},{"id":"JA2","text":"A2. Adult Sexual Violence outside of a partner relationship (assault, rape, or coercion in community, workplace, or other context)","type":"domain"},{"id":"JA3","text":"A3. Stalking, Harassment, or Threatening Behavior (including online)","type":"domain"},{"id":"JA4","text":"A4. Medical Trauma or Iatrogenic Harm (serious medical complications, being dismissed or disbelieved by providers, being harmed by treatment)","type":"domain"},{"id":"JA5","text":"A5. Housing, Economic, or Food Insecurity (homelessness, financial crisis, inability to afford basic necessities)","type":"domain"},{"id":"JA6","text":"A6. Traumatic Bereavement and Significant Loss (sudden or violent death of someone close, loss of a child, multiple losses in a short period)","type":"domain"},{"id":"JA7","text":"A7. Discrimination, Harassment, or Community Violence based on race, gender, religion, disability, or other identity","type":"domain"}]},{"id":"K","part":3,"title":"Section K","subtitle":"Group B \u2014 Occupational Adversity","note":"Group B applies to any paid or unpaid employment, caregiving, or service role. If you have never held such a role, select 0 for all items.","scale_note":"Occurrence: 0=Never  1=Once  2=Several times  3=Regularly/Sustained  |  Impact: 0=None  1=Mild  2=Moderate  3=Significant","questions":[{"id":"KB1","text":"B1. Patient/Client Deaths or Adverse Outcomes (including preventable events and associated feelings of responsibility)","type":"domain"},{"id":"KB2","text":"B2. Workplace Violence (physical violence, verbal abuse, sexual harassment from patients, visitors, supervisors, or coworkers)","type":"domain"},{"id":"KB3","text":"B3. Moral Injury (required to act against your ethical values; unable to provide care you knew was needed; required to follow policies endangering safety)","type":"domain"},{"id":"KB4","text":"B4. Institutional Betrayal (reports of safety concerns dismissed, retaliated against for reporting misconduct, whistleblower experiences)","type":"domain"},{"id":"KB5","text":"B5. Occupational Schedule Disruption (mandatory overtime, rotating shifts, back-to-back extended shifts, chronic on-call)","type":"domain"},{"id":"KB6","text":"B6. Workforce Reduction and Role Erosion (downsizing while volume stayed same, significant increase in patient load, required to perform duties outside your training)","type":"domain"},{"id":"KB7","text":"B7. Pandemic or Mass Casualty Exposure (working without adequate PPE, witnessing deaths at elevated rate, distressing triage decisions under crisis conditions)","type":"domain"}]},{"id":"L","part":3,"title":"Section L","subtitle":"Bidirectional Violence Assessment","note":"Section L is a CLINICAL SCREEN. It is not a disciplinary instrument. Responses are clinical data used to support your care. They are not reported to employers, licensing boards, or regulatory agencies based on disclosure alone.","questions":[{"id":"L1a","text":"Have you been involved in a physical altercation at work that you did not initiate but were required to respond to (restraint, intervention, or de-escalation that became physical)?","type":"radio","options":["No","Yes \u2014 1\u20132 times","Yes \u2014 3\u201310 times","Yes \u2014 more than 10 times"]},{"id":"L2a","text":"In your work environment, have you noticed yourself becoming more verbally reactive, short-tempered, or irritable with patients, clients, or coworkers than earlier in your career?","type":"radio","options":["No","Mild increase","Moderate increase","Significant increase that concerns me"]},{"id":"L2b","text":"Have you ever said something to a patient, client, or coworker that you immediately regretted because it was harsher, more dismissive, or more demeaning than you intended?","type":"radio","options":["No","Once or twice in my career","Occasionally","More frequently than I am comfortable with"]},{"id":"L2c","text":"Have you noticed yourself THINKING about patients, clients, or coworkers in ways that feel dehumanizing or disrespectful \u2014 even if you did not act on these thoughts?","type":"radio","options":["No","Occasionally, and it concerned me when I noticed it","Frequently","It has become a background feature of how I think about the people I serve"]},{"id":"L2d","text":"Have you ever felt a strong IMPULSE to respond to a workplace situation with anger, force, or retaliation \u2014 even if you did not act on it?","type":"radio","options":["No","Occasionally","Frequently","Yes, and I am concerned about this"]},{"id":"L2e","text":"Do you believe that your level of occupational stress and exposure is affecting your CAPACITY TO CARE for patients or colleagues with the level of compassion and judgment you expect of yourself?","type":"radio","options":["No","Possibly, mildly","Yes, and it worries me","Yes, and I believe I need support"]}]}];
+
+// ── State ──────────────────────────────────────────────────
+let currentIdx = 0;  // index into SECTIONS (0 = intro)
+let responses = {};  // { questionId: value }
+let safetyFlagged = false;
+
+// ── Section order (excluding intro handled separately) ──────
+const formSections = SECTIONS.filter(s => s.id !== 'intro');
+// sectionIdx: 0 = intro, 1..N = formSections[0..N-1]
+
+// ── Render ──────────────────────────────────────────────────
+function init(){
+  buildStepDots();
+  renderIntro();
+}
+
+function buildStepDots(){
+  const dots = document.getElementById('stepDots');
+  // 1 dot per form section + 1 for results
+  formSections.forEach((s,i)=>{
+    const d = document.createElement('div');
+    d.className='step-dot';
+    d.id='dot-'+i;
+    d.title=s.id+': '+s.subtitle;
+    dots.appendChild(d);
+  });
+  // results dot
+  const d=document.createElement('div');
+  d.className='step-dot';
+  d.id='dot-results';
+  d.title='Results';
+  dots.appendChild(d);
+}
+
+function updateProgress(sIdx){
+  const total = formSections.length + 1;
+  const pct = Math.round(sIdx/(total)*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressPct').textContent=pct+'%';
+  if(sIdx>0 && sIdx<=formSections.length){
+    const s=formSections[sIdx-1];
+    document.getElementById('progressLabel').textContent=
+      (s.part?'Part '+s.part+' · ':'')+s.title+': '+s.subtitle;
+  }
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    d.classList.remove('done','current');
+    if(i<sIdx-1) d.classList.add('done');
+    if(i===sIdx-1) d.classList.add('current');
+  });
+}
+
+function renderIntro(){
+  currentIdx=0;
+  document.getElementById('progressWrap').style.display='none';
+  document.getElementById('resultsPage').classList.remove('active');
+  const c=document.getElementById('sectionContainer');
+  c.innerHTML=`<div class="card intro-hero">
+    <div class="section-tag">Differential Diagnosis and Lifetime Adversity Tracking Instrument</div>
+    <h2>Welcome to COMPASS v1.0</h2>
+    <p>This instrument helps your provider understand your symptoms, history, and experiences more fully. It supports a thorough differential evaluation across six clinical presentations that share overlapping features.</p>
+    <div class="intro-meta">
+      <div class="meta-item"><strong>Completion Time</strong>Full instrument: 40–55 min<br>Core form (A–G): 15–20 min</div>
+      <div class="meta-item"><strong>Administration</strong>Patient self-report with provider review; or completed together during visit</div>
+      <div class="meta-item"><strong>Frequency</strong>Sections A–G: each visit<br>Sections H–L: intake and annually</div>
+      <div class="meta-item"><strong>Confidentiality</strong>All responses are part of your confidential clinical record</div>
+    </div>
+    <div class="note-box" style="text-align:left">
+      <strong>Instructions:</strong> Please answer as honestly as you can. There are no right or wrong answers. If a question does not apply to you, skip it. If you are unsure, select the option that seems closest. You may stop and continue later.
+    </div>
+    <button class="btn-start" onclick="startForm()">Begin Assessment &rarr;</button>
+  </div>`;
+}
+
+function startForm(){
+  currentIdx=1;
+  document.getElementById('progressWrap').style.display='block';
+  renderSection();
+}
+
+function renderSection(){
+  if(currentIdx>formSections.length){showResults();return;}
+  const s=formSections[currentIdx-1];
+  updateProgress(currentIdx);
+  
+  let html=`<div class="card section-form">`;
+  if(s.part) html+=`<div class="section-tag">Part ${s.part}</div>`;
+  html+=`<div class="section-title">${s.title}</div>`;
+  html+=`<div class="section-sub">${s.subtitle}</div>`;
+  if(s.note) html+=`<div class="note-box">${escHtml(s.note)}</div>`;
+  if(s.note_patient) html+=`<div class="note-box">${escHtml(s.note_patient)}</div>`;
+  if(s.safety) html+=`<div class="note-box" style="border-left-color:var(--alert);background:#FFF8F8">
+    <strong style="color:var(--alert)">⚠ If you are currently in crisis or having thoughts of suicide with a plan, please tell your provider or care team immediately. You do not need to wait to complete this form.</strong></div>`;
+  if(s.scale_note) html+=`<div class="scale-note">${escHtml(s.scale_note)}</div>`;
+  
+  // Render questions
+  s.questions.forEach(q=>{
+    if(q.conditional && !isConditionMet(q.conditional)){return;}
+    html+=renderQuestion(q,s.id);
+  });
+  
+  html+=`<div id="validMsg" class="validation-msg">Please answer all required questions before continuing.</div>`;
+  html+=`</div>`;
+  
+  html+=`<div class="nav-bar">
+    <button class="btn btn-back" onclick="goBack()">&larr; Back</button>
+    <button class="btn btn-primary" onclick="goNext()">${currentIdx<formSections.length?'Continue &rarr;':'View Results &rarr;'}</button>
+    <span class="nav-hint">Section ${currentIdx} of ${formSections.length}</span>
+  </div>`;
+  
+  document.getElementById('sectionContainer').innerHTML=html;
+  document.getElementById('resultsPage').classList.remove('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function isConditionMet(cond){
+  const [qid,val]=cond.split('=');
+  const r=responses[qid];
+  if(!r) return false;
+  if(Array.isArray(r)) return r.includes(val);
+  return r===val || r.startsWith(val);
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderQuestion(q,secId){
+  if(q.type==='header'){
+    return`<div class="q-section-header"><h3>${escHtml(q.text)}</h3></div>`;
+  }
+  
+  let html=`<div class="q-block" id="qb-${q.id}">`;
+  
+  if(q.type==='likert4'||q.type==='likert4ace'){
+    const scores=[0,1,2,3];
+    const labels=q.type==='likert4ace'?['No','Once','Several','Sustained']:['None','Mild','Mod.','Severe'];
+    const cur=responses[q.id]!==undefined?responses[q.id]:-1;
+    html+=`<div class="likert-block">
+      <div class="q-text">${escHtml(q.text)}</div>
+      <div class="likert-row">`;
+    scores.forEach((s,i)=>{
+      const sel=cur===s?'sel':'';
+      html+=`<button class="likert-btn ${sel}" data-qid="${q.id}" data-val="${s}" onclick="setLikert('${q.id}',${s},this)">
+        <span class="lk-score">${s}</span>
+        <span class="lk-label">${labels[i]}</span>
+      </button>`;
+    });
+    html+=`</div></div>`;
+    html+=`</div>`;
+    return html;
+  }
+  
+  if(q.type==='domain'){
+    const cur=responses[q.id]||{occ:undefined,imp:undefined};
+    html+=`<div class="domain-block">
+      <div class="domain-title">${escHtml(q.text)}</div>
+      <div class="domain-row">
+        <div class="domain-col">
+          <div class="domain-col-label">Occurrence</div>
+          <div class="domain-opts">`;
+    [0,1,2,3].forEach(v=>{
+      const lbl=['Never','Once','Several','Sustained'][v];
+      const sel=cur.occ===v?'sel':'';
+      html+=`<button class="domain-btn ${sel}" onclick="setDomain('${q.id}','occ',${v},this)">${v}<br><small>${lbl}</small></button>`;
+    });
+    html+=`</div></div>
+        <div class="domain-col">
+          <div class="domain-col-label">Impact on Mental Health</div>
+          <div class="domain-opts">`;
+    [0,1,2,3].forEach(v=>{
+      const lbl=['None','Mild','Mod.','High'][v];
+      const sel=cur.imp===v?'sel':'';
+      html+=`<button class="domain-btn ${sel}" onclick="setDomain('${q.id}','imp',${v},this)">${v}<br><small>${lbl}</small></button>`;
+    });
+    html+=`</div></div></div></div>`;
+    html+=`</div>`;
+    return html;
+  }
+  
+  if(q.type==='number'){
+    const cur=responses[q.id]||'';
+    html+=`<div class="q-label">${escHtml(q.text)}</div>
+      <input type="number" class="num-input" id="inp-${q.id}" value="${cur}"
+        min="${q.min||0}" max="${q.max||120}"
+        onchange="responses['${q.id}']=parseInt(this.value)||undefined">`;
+    html+=`</div>`;
+    return html;
+  }
+  
+  // radio or checkbox
+  const isCheck=q.type==='checkbox';
+  const isSafety=q.type==='radio_safety';
+  const cur=responses[q.id];
+  
+  html+=`<div class="q-label">${escHtml(q.text)}${isCheck?'<span class="q-required">(select all that apply)</span>':''}</div>`;
+  html+=`<div class="opt-list">`;
+  
+  q.options.forEach((opt,i)=>{
+    const isActive=isCheck?(Array.isArray(cur)&&cur.includes(opt)):(cur===opt);
+    const sel=isActive?'selected':'';
+    const alertCls=isSafety&&i>0?'style="border-color:var(--alert)"':'';
+    
+    if(isCheck){
+      html+=`<div class="opt-item ${sel}" ${alertCls} onclick="toggleCheck('${q.id}','${opt.replace(/'/g,"\\'")}',this)">
+        <input type="checkbox" ${isActive?'checked':''} onclick="event.stopPropagation()">
+        <label>${escHtml(opt)}</label>
+      </div>`;
+    } else {
+      html+=`<div class="opt-item ${sel}" ${alertCls} onclick="selectOpt('${q.id}','${opt.replace(/'/g,"\\'")}',this,'${isSafety?'safety':''}')">
+        <input type="radio" ${isActive?'checked':''} name="r-${q.id}" onclick="event.stopPropagation()">
+        <label>${escHtml(opt)}</label>
+      </div>`;
+    }
+  });
+  html+=`</div></div>`;
+  return html;
+}
+
+// ── Input handlers ──────────────────────────────────────────
+function setLikert(qid,val,btn){
+  responses[qid]=val;
+  const row=btn.closest('.likert-row');
+  row.querySelectorAll('.likert-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function setDomain(qid,field,val,btn){
+  if(!responses[qid]) responses[qid]={occ:undefined,imp:undefined};
+  responses[qid][field]=val;
+  const row=btn.closest('.domain-opts');
+  row.querySelectorAll('.domain-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function selectOpt(qid,val,el,type){
+  responses[qid]=val;
+  const list=el.closest('.opt-list');
+  list.querySelectorAll('.opt-item').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type=radio]').checked=true;
+  // Safety gate
+  if(type==='safety' && val!=='No'){
+    safetyFlagged=true;
+    if(val.includes('plan')||val.includes('Active')||val.includes('Passive')){
+      document.getElementById('safetyModal').style.display='flex';
+    }
+  }
+  // E1: refresh section if conditional questions need to show
+  if(qid==='E1'){
+    setTimeout(()=>renderSection(),50);
+  }
+}
+
+function toggleCheck(qid,val,el){
+  if(!responses[qid]) responses[qid]=[];
+  const idx=responses[qid].indexOf(val);
+  if(idx>=0){
+    responses[qid].splice(idx,1);
+    el.classList.remove('selected');
+    el.querySelector('input[type=checkbox]').checked=false;
+  } else {
+    responses[qid].push(val);
+    el.classList.add('selected');
+    el.querySelector('input[type=checkbox]').checked=true;
+  }
+}
+
+function closeSafetyModal(){
+  document.getElementById('safetyModal').style.display='none';
+}
+
+// ── Navigation ──────────────────────────────────────────────
+function goNext(){
+  // Re-render to catch conditional questions
+  const s=formSections[currentIdx-1];
+  s.questions.forEach(q=>{
+    if(q.type==='number'){
+      const inp=document.getElementById('inp-'+q.id);
+      if(inp) responses[q.id]=parseInt(inp.value)||undefined;
+    }
+  });
+  currentIdx++;
+  renderSection();
+}
+
+function goBack(){
+  if(currentIdx>1){currentIdx--;renderSection();}
+  else{renderIntro();}
+}
+
+function restartForm(){
+  responses={};
+  safetyFlagged=false;
+  currentIdx=0;
+  document.getElementById('resultsPage').classList.remove('active');
+  renderIntro();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ════════════════════════════════════════════════════════════
+// SCORING ENGINE
+// Based on COMPASS v1.0 Section V algorithms
+// ════════════════════════════════════════════════════════════
+
+function r(qid){ return responses[qid]; }
+function num(qid){ const v=r(qid); return typeof v==='number'?v:0; }
+function isOpt(qid,val){ const v=r(qid); if(!v) return false; if(Array.isArray(v)) return v.some(x=>x.startsWith(val)||x===val); return v.startsWith(val)||v===val; }
+function hasOpts(qid,vals){ return vals.some(v=>isOpt(qid,v)); }
+
+// ── wACE ─────────────────────────────────────────────────────
+function scoreWACE(){
+  const items=['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10'];
+  const total=items.reduce((s,id)=>s+num(id),0);
+  const aceCount=items.filter(id=>num(id)>=1).length;
+  let cat='MINIMAL';
+  if(total>=25)cat='SEVERE/CRITICAL';
+  else if(total>=18)cat='MODERATE-SEVERE';
+  else if(total>=11)cat='MODERATE';
+  else if(total>=6)cat='MILD';
+  const caregiver=isOpt('H12','Yes');
+  const earlyOnset=isOpt('H11','Under age 5')||isOpt('H11','Began before age 5');
+  return{total,aceCount,cat,caregiver,earlyOnset,ppaThresholdLowered:total>=15};
+}
+
+// ── CPI ───────────────────────────────────────────────────────
+function scoreCPI(){
+  const lutealOnset=isOpt('B1','About 1 week')||isOpt('B1','About 2 weeks');
+  const clearRemission=isOpt('B2','Within 1');
+  const symptomFree=isOpt('B3','Noticeably better');
+  const partialRemission=isOpt('B2','Within 1')||isOpt('B2','somewhat');
+  const someImprovement=isOpt('B3','Noticeably')||isOpt('B3','Somewhat better');
+  let cpi='LOW';
+  if(lutealOnset&&clearRemission&&symptomFree) cpi='HIGH';
+  else if(lutealOnset&&(partialRemission||someImprovement)) cpi='MODERATE';
+  
+  const lut=['C1','C2','C3','C4','C5','C6','C7','C8','C9','C10','C11','C12','C13','C14'].reduce((s,id)=>s+num(id),0);
+  const fol=['C15','C16','C17','C18','C19','C20','C21','C22','C23','C24','C25','C26','C27','C28'].reduce((s,id)=>s+num(id),0);
+  const diff=lut-fol;
+  let diffInterp='';
+  if(diff>=10&&cpi==='HIGH') diffInterp='Pattern consistent with PMDD';
+  else if(diff>=5) diffInterp='Consistent with PMS or PMDD with comorbidity';
+  else if(diff>=0) diffInterp='Reduced PMDD probability — consider other differentials';
+  else diffInterp='Strongly inconsistent with PMDD as primary presentation';
+  return{cpi,lutealTotal:lut,follicularTotal:fol,diff,diffInterp};
+}
+
+// ── PTSD/C-PTSD ───────────────────────────────────────────────
+function scoreTrauma(){
+  const ptsd=['P1','P2','P3','P4','P5','P6'].reduce((s,id)=>s+num(id),0);
+  const dso=['C1_i','C2_i','C3_i','C4_i','C5_i','C6_i'].reduce((s,id)=>s+num(id),0);
+  let pattern='BELOW_THRESHOLD';
+  if(ptsd>=8&&dso>=6) pattern='C-PTSD';
+  else if(ptsd>=8&&dso<6) pattern='PTSD';
+  else if(ptsd<8&&dso>=6) pattern='DSO_PREDOMINANT';
+  else if(ptsd>=4&&dso>=4) pattern='ELEVATED_SUBTHRESHOLD';
+  const caregiver=isOpt('IB3','Yes');
+  const interpersonal=isOpt('IB2','Another person')||isOpt('IB2','Both');
+  return{ptsd,dso,pattern,caregiver,interpersonal};
+}
+
+// ── LAI ───────────────────────────────────────────────────────
+function scoreDomain(qid){
+  const v=responses[qid];
+  if(!v||typeof v!=='object') return 0;
+  return(v.occ||0)+(v.imp||0);
+}
+function scoreLAI(){
+  const a=['JA1','JA2','JA3','JA4','JA5','JA6','JA7'].map(scoreDomain);
+  const b=['KB1','KB2','KB3','KB4','KB5','KB6','KB7'].map(scoreDomain);
+  const groupA=a.reduce((s,v)=>s+v,0);
+  const groupB=b.reduce((s,v)=>s+v,0);
+  const total=groupA+groupB;
+  let cat='MINIMAL';
+  if(total>=68)cat='CRITICAL';
+  else if(total>=52)cat='SEVERE';
+  else if(total>=39)cat='MODERATE-SEVERE';
+  else if(total>=26)cat='MODERATE';
+  else if(total>=13)cat='MILD';
+  const medicalTrauma=scoreDomain('JA4')>=3;
+  const ipvDominant=scoreDomain('JA1')>=4;
+  return{groupA,groupB,total,cat,ppaModifier:total>=40,medicalTrauma,ipvDominant};
+}
+
+// ── PPA ───────────────────────────────────────────────────────
+function scorePPA(wace,trauma,lai){
+  const age=num('F1')||0;
+  const cycleIrregular=hasOpts('A9',['Cycles are more','Cycles are closer','Cycles are further','Cycles have become']);
+  const hotFlashes=isOpt('F2','Several times per week')||isOpt('F2','Daily');
+  const nightSweats=isOpt('F3','Most nights');
+  let adjThreshold=null;
+  if(wace.ppaThresholdLowered||trauma.pattern==='C-PTSD') adjThreshold=35;
+  else if(lai.ppaModifier) adjThreshold=38;
+  if(lai.ipvDominant&&cycleIrregular) adjThreshold=18;
+  const effectiveThreshold=adjThreshold||40;
+  const meetsAge=age>=effectiveThreshold;
+  let level='LOW';
+  if((hotFlashes||nightSweats)&&meetsAge) level='ELEVATED';
+  else if(adjThreshold&&cycleIrregular) level='ELEVATED';
+  else if(meetsAge&&(cycleIrregular||hotFlashes||nightSweats)) level='MODERATE';
+  else if(adjThreshold&&age>=adjThreshold) level='MODERATE';
+  return{level,adjThreshold,meetsAge,cycleIrregular,hotFlashes,nightSweats};
+}
+
+// ── CSC-R ─────────────────────────────────────────────────────
+function scoreCSCR(wace,trauma){
+  const age=num('F1')||0;
+  const cycleIrregular=hasOpts('A9',['Cycles are more','Cycles are closer','Cycles are further','Cycles have become']);
+  const vasomotor=isOpt('F2','Several times')||isOpt('F2','Daily')||isOpt('F3','Most nights')||isOpt('F3','Several nights');
+  const adjAge=(wace.ppaThresholdLowered||trauma.pattern==='C-PTSD')&&age>=35;
+  const csc1=(cycleIrregular||vasomotor)&&(age>=45||adjAge);
+  const lipophilic=['Simvastatin','Atorvastatin','Lovastatin','Fluvastatin'];
+  const csc2=isOpt('G9','Yes')&&lipophilic.some(l=>isOpt('G9a',l));
+  const hasProgesterone=isOpt('G3','Yes')||isOpt('G2','Yes')||isOpt('G1','Yes')||isOpt('A5','Yes')||isOpt('A6','Yes');
+  const csc3=!hasProgesterone;
+  const lut=['C1','C2','C3','C4','C5','C6','C7','C8','C9','C10','C11','C12','C13','C14'].reduce((s,id)=>s+num(id),0);
+  const csc4=lut>=10||isOpt('D5','Yes, frequently')||isOpt('F4','Yes')||isOpt('E2','worse before my period');
+  const activated=csc1&&csc2&&csc3&&csc4;
+  return{activated,csc1,csc2,csc3,csc4};
+}
+
+// ── Differential signals ──────────────────────────────────────
+function scoreDifferential(cpi,trauma,ppa,wace,lai){
+  // PMS
+  let pms='LOW';
+  if(cpi.cpi==='HIGH'&&cpi.diff>=5&&cpi.diff<10) pms='MODERATE';
+  else if(cpi.cpi!=='LOW'&&cpi.diff>=5&&cpi.diff<10) pms='MODERATE';
+  
+  // PMDD
+  let pmdd='LOW';
+  if(cpi.cpi==='HIGH'&&cpi.diff>=10&&cpi.lutealTotal>=10) pmdd='ELEVATED';
+  else if(cpi.cpi!=='LOW'&&cpi.diff>=5&&cpi.lutealTotal>=8) pmdd='MODERATE';
+  
+  // Peri-meno
+  let peri='LOW';
+  if(ppa.level==='ELEVATED'&&(cpi.cpi==='MODERATE'||cpi.cpi==='LOW')) peri='ELEVATED';
+  else if(ppa.level==='ELEVATED') peri='MODERATE';
+  else if(ppa.level==='MODERATE') peri='MODERATE';
+  
+  // BPD
+  let bpd_score=0;
+  if(isOpt('D1','Fear of being abandoned')) bpd_score+=2;
+  if(cpi.cpi==='LOW') bpd_score+=1;
+  if(isOpt('D3','Rarely')||isOpt('D3','Somewhat')) bpd_score+=1;
+  if(isOpt('D2','Minutes')||isOpt('D2','Several hours')) bpd_score+=1;
+  if(isOpt('D6','Primarily determined')) bpd_score+=1;
+  if(isOpt('G7','Yes')&&isOpt('G7','no change')) bpd_score+=2;
+  let bpd=bpd_score>=5?'ELEVATED':bpd_score>=3?'MODERATE':'LOW';
+  
+  // Bipolar
+  let bip_score=0;
+  if(isOpt('D4','Yes')) bip_score+=3;
+  if(isOpt('D2','1 week')||isOpt('D2','Several days')) bip_score+=1;
+  if(cpi.cpi==='LOW') bip_score+=1;
+  if(isOpt('G5','Yes')&&(isOpt('G5','improved'))) bip_score+=2;
+  if(isOpt('G4','Yes')&&isOpt('G4','worsened')) bip_score+=1;
+  let bipolar=bip_score>=5?'ELEVATED':bip_score>=3?'MODERATE':'LOW';
+  
+  // C-PTSD
+  let cptsd_score=0;
+  if(trauma.pattern==='C-PTSD') cptsd_score+=3;
+  else if(trauma.pattern==='PTSD'||trauma.pattern==='DSO_PREDOMINANT') cptsd_score+=2;
+  if(trauma.caregiver) cptsd_score+=1;
+  if(isOpt('D1','Reminders of past')) cptsd_score+=1;
+  if(wace.total>=15) cptsd_score+=1;
+  if(isOpt('E2','reminded of past')) cptsd_score+=1;
+  let cptsd=cptsd_score>=5?'ELEVATED':cptsd_score>=3?'MODERATE':'LOW';
+  
+  return{pms,pmdd,peri,bpd,bipolar,cptsd};
+}
+
+// ── Care tier ─────────────────────────────────────────────────
+function computeCareTier(diff,spi,trauma,cpi){
+  const e4=r('E4')||'No';
+  if(e4.includes('plan')) return{tier:3,rationale:'Active suicidal ideation with plan identified (E4). Urgent safety assessment required by institutional protocol. All other findings are secondary to this.'};
+  if(e4.includes('Active')) return{tier:3,rationale:'Active suicidal ideation (without plan) identified. Clinical safety assessment indicated before this visit ends.'};
+  const elevated=Object.values(diff).filter(v=>v==='ELEVATED').length;
+  const moderate=Object.values(diff).filter(v=>v==='MODERATE').length;
+  const bpdBipolarCPTSDElev=diff.bpd==='ELEVATED'||diff.bipolar==='ELEVATED'||diff.cptsd==='ELEVATED';
+  const noPriorFormal=!isOpt('G8','Borderline')&&!isOpt('G8','Bipolar')&&!isOpt('G8','Complex PTSD')&&!isOpt('G8','PTSD');
+  if(e4.includes('Passive')) return{tier:3,rationale:'Passive suicidal ideation reported. Safety assessment and provider discussion indicated today.'};
+  if(elevated>=2||(bpdBipolarCPTSDElev&&noPriorFormal)) return{tier:3,rationale:`Urgent clinical evaluation recommended: ${elevated} elevated differential signal(s). ${bpdBipolarCPTSDElev&&noPriorFormal?'BPD, Bipolar, or C-PTSD signal elevated without documented prior formal evaluation. ':''} Do not delay clinical review.`};
+  if(elevated>=1||moderate>=1||trauma.pattern==='C-PTSD') return{tier:2,rationale:`Clinical evaluation warranted: ${elevated} elevated, ${moderate} moderate signal(s). ${trauma.pattern==='C-PTSD'?'C-PTSD pattern identified: trauma-focused evaluation indicated. ':''}Specialist referral should be considered.`};
+  return{tier:1,rationale:'Low signals across all six differential targets with no active safety flags. Monitoring, lifestyle documentation, and follow-up at next visit are indicated.'};
+}
+
+// ── Red flags ─────────────────────────────────────────────────
+function detectRedFlags(wace,trauma,lai,ppa,cscr,diff,cpi){
+  const flags=[];
+  const e4=r('E4')||'No';
+  if(e4.includes('plan')) flags.push({urgent:true,text:'IMMEDIATE: Active suicidal ideation with plan. Institutional safety protocol required now before patient leaves.'});
+  if(e4.includes('Active')) flags.push({urgent:true,text:'ACTIVE IDEATION: Active suicidal ideation (no plan stated). Safety assessment required this visit.'});
+  if(e4.includes('Passive')) flags.push({urgent:false,text:'PASSIVE IDEATION: Passive suicidal ideation reported. Provider discussion required today.'});
+  const l2cAlert=isOpt('L2c','Frequently')||isOpt('L2c','It has become');
+  const l2dAlert=isOpt('L2d','Yes, and I am concerned');
+  if(l2cAlert||l2dAlert) flags.push({urgent:false,text:'L-2 ALERT: Externalization pattern noted with occupational access to vulnerable individuals. Clinical support referral required this visit. Not disciplinary.'});
+  if(isOpt('L2e','Yes, and I believe I need support')) flags.push({urgent:true,text:'SUPPORT REQUEST: Patient indicated need for support (L-2e). Initiate clinical support referral this visit.'});
+  if(isOpt('D4','Yes')&&isOpt('G4','Yes')&&isOpt('G4','improved')&&!isOpt('G5','Yes')) flags.push({urgent:false,text:'PHARMACOLOGICAL REVIEW: Positive hypomanic/manic screen with SSRI and no mood stabilizer. SSRI monotherapy in bipolar II carries destabilization risk. Psychiatric consultation indicated.'});
+  if(trauma.pattern==='C-PTSD'&&isOpt('G8','Borderline')) flags.push({urgent:false,text:'REASSESSMENT FLAG: C-PTSD pattern with prior BPD diagnosis in chart. Trauma-informed diagnostic review warranted. C-PTSD and BPD require systematic differentiation.'});
+  if(diff.pmdd!=='LOW'&&trauma.pattern==='C-PTSD') flags.push({urgent:false,text:'COMPOUND PRESENTATION: PMDD + C-PTSD pattern identified. Most common underrecognized compound. Both hormonal evaluation and trauma-focused therapy indicated. SSRI monotherapy alone has limited expected sustained benefit.'});
+  if(wace.ppaThresholdLowered&&ppa.adjThreshold&&(num('F1')||0)>=35&&(num('F1')||0)<=42) flags.push({urgent:false,text:'EARLY PERIMENOPAUSE FLAG: Adversity-adjusted PPA threshold applies (age 35+). Obtain FSH, estradiol, TSH. Do not rely on conventional age criteria.'});
+  if(isOpt('G7','Yes')&&isOpt('G7','no change')) flags.push({urgent:false,text:'GnRH RESPONSE: No symptom improvement with GnRH suppression. BPD or bipolar etiology substantially more probable. Revise differential accordingly.'});
+  if(cscr.activated) flags.push({urgent:false,text:'CSC-R ACTIVATED: Compound Substrate Compression Risk. Lipophilic statin + perimenopausal status + no progesterone + affective symptoms. Pharmacological review and HRT eligibility assessment indicated this visit.'});
+  if(lai.total>=40&&!isOpt('G8','PTSD')&&!isOpt('G8','Complex')) flags.push({urgent:false,text:'ADVERSITY SUPPORT FLAG: LAI at moderate-severe threshold ('+lai.total+'/84). No documented trauma-focused treatment. Assess current supports; provide referral options.'});
+  if(lai.medicalTrauma) flags.push({urgent:false,text:'IATROGENIC HARM BARRIER: Medical trauma documented (A4). Medical avoidance should not be interpreted as non-compliance without assessing trauma barrier.'});
+  if(trauma.caregiver&&wace.total>=15&&trauma.pattern==='C-PTSD') flags.push({urgent:false,text:'C-PTSD HIGHLY PROBABLE: Caregiver-perpetrated adversity + wACE ≥15 + C-PTSD pattern. Structured clinical assessment for C-PTSD indicated. Document in formulation.'});
+  return flags;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESULTS
+// ═══════════════════════════════════════════════════════════
+
+function showResults(){
+  document.getElementById('sectionContainer').innerHTML='';
+  document.getElementById('progressWrap').style.display='none';
+  
+  // Compute all scores
+  const wace=scoreWACE();
+  const cpi=scoreCPI();
+  const trauma=scoreTrauma();
+  const lai=scoreLAI();
+  const ppa=scorePPA(wace,trauma,lai);
+  const cscr=scoreCSCR(wace,trauma);
+  const diff=scoreDifferential(cpi,trauma,ppa,wace,lai);
+  const spi=r('E4')||'No';
+  const careTier=computeCareTier(diff,spi,trauma,cpi);
+  const flags=detectRedFlags(wace,trauma,lai,ppa,cscr,diff,cpi);
+  
+  // Timestamp
+  const ts=new Date().toLocaleString('en-US',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('resultsTimestamp').textContent='Completed: '+ts;
+  
+  // Safety banner
+  if(safetyFlagged||spi!=='No'){
+    document.getElementById('safetyResultBanner').style.display='block';
+  }
+  
+  // Care tier
+  const ctClass='ct-'+careTier.tier;
+  document.getElementById('careTierBlock').innerHTML=`
+    <div class="care-tier-block ${ctClass}">
+      <div class="ct-label">Recommended Care Level</div>
+      <div class="ct-num">Tier ${careTier.tier}</div>
+      <div class="ct-rationale">${careTier.rationale}</div>
+    </div>`;
+  
+  // OMO grid
+  const omoCards=[
+    {title:'Cycle-Phase Index (CPI)',value:cpi.cpi,sub:`LF Differential: ${cpi.diff} | Luteal total: ${cpi.lutealTotal} | Follicular: ${cpi.follicularTotal}<br>${cpi.diffInterp}`},
+    {title:'wACE Score',value:wace.total+'/30',sub:`Category: ${wace.cat} | ACE count: ${wace.aceCount}/10${wace.caregiver?' | Caregiver-perpetrated':''}${wace.ppaThresholdLowered?' | PPA threshold lowered to age 35':''}`},
+    {title:'PTSD / C-PTSD Pattern',value:trauma.pattern,sub:`PTSD cluster: ${trauma.ptsd}/18 | DSO cluster: ${trauma.dso}/18${trauma.caregiver?' | Caregiver-perpetrated':''}`},
+    {title:'Lifetime Adversity Index',value:lai.total+'/84',sub:`Group A: ${lai.groupA}/42 | Group B: ${lai.groupB}/42 | Category: ${lai.cat}`},
+    {title:'Perimenopausal Assessment (PPA)',value:ppa.level,sub:`${ppa.adjThreshold?'Adversity-adjusted threshold: age '+ppa.adjThreshold:'Standard threshold: age 40'}${ppa.meetsAge?' | Age threshold met':''}`},
+    {title:'Compound Substrate Risk (CSC-R)',value:cscr.activated?'ACTIVATED':'Not activated',sub:cscr.activated?'Pharmacological review + HRT eligibility assessment indicated this visit':'CSC-1 through CSC-4 criteria not all met'},
+  ];
+  
+  document.getElementById('omoGrid').innerHTML=omoCards.map(c=>`
+    <div class="omo-card">
+      <div class="omo-card-title">${c.title}</div>
+      <div class="omo-card-value">${c.value}</div>
+      <div class="omo-card-sub">${c.sub}</div>
+    </div>`).join('');
+  
+  // Differential profile
+  const diffMap={pms:'PMS',pmdd:'PMDD',peri:'Perimenopausal Mood Disorder',bpd:'Borderline Personality Disorder',bipolar:'Bipolar Spectrum',cptsd:'Complex PTSD (C-PTSD)'};
+  document.getElementById('differentialProfile').innerHTML=
+    Object.entries(diff).map(([k,v])=>`
+      <div class="signal-row">
+        <span class="signal-name">${diffMap[k]||k}</span>
+        <span class="signal-badge sig-${v}">${v}</span>
+      </div>`).join('');
+  
+  // Red flags
+  const flagList=document.getElementById('flagList');
+  const redCard=document.getElementById('redFlagsCard');
+  if(flags.length===0){
+    redCard.style.display='none';
+  } else {
+    flagList.innerHTML=flags.map(f=>`<li class="flag-item ${f.urgent?'flag-immediate':''}">${escHtml(f.text)}</li>`).join('');
+  }
+  
+  // Score summary table
+  document.getElementById('scoreSummaryTable').innerHTML=`
+    <thead><tr><th>Index</th><th>Score</th><th>Category / Pattern</th></tr></thead>
+    <tbody>
+      <tr><td>wACE Total</td><td>${wace.total}/30</td><td>${wace.cat}</td></tr>
+      <tr><td>ACE Count (binary)</td><td>${wace.aceCount}/10</td><td>Backward-compatible count</td></tr>
+      <tr><td>PTSD Cluster (P1–P6)</td><td>${trauma.ptsd}/18</td><td>Threshold: 8</td></tr>
+      <tr><td>DSO Cluster (C1–C6)</td><td>${trauma.dso}/18</td><td>Threshold: 6</td></tr>
+      <tr><td>Trauma Pattern</td><td colspan="2">${trauma.pattern}</td></tr>
+      <tr><td>Luteal Symptom Total</td><td>${cpi.lutealTotal}/42</td><td>C1–C14</td></tr>
+      <tr><td>Follicular Symptom Total</td><td>${cpi.follicularTotal}/42</td><td>C15–C28</td></tr>
+      <tr><td>LF Differential</td><td>${cpi.diff}</td><td>Luteal minus follicular</td></tr>
+      <tr><td>CPI Classification</td><td colspan="2">${cpi.cpi}</td></tr>
+      <tr><td>LAI Group A</td><td>${lai.groupA}/42</td><td>Life and relational adversity</td></tr>
+      <tr><td>LAI Group B</td><td>${lai.groupB}/42</td><td>Occupational adversity</td></tr>
+      <tr><td>LAI Total</td><td>${lai.total}/84</td><td>${lai.cat}</td></tr>
+      <tr><td>PPA Level</td><td colspan="2">${ppa.level}${ppa.adjThreshold?' (adversity-adjusted, threshold '+ppa.adjThreshold+')':''}</td></tr>
+      <tr><td>CSC-R</td><td colspan="2">${cscr.activated?'ACTIVATED':'Not activated'}</td></tr>
+      <tr><td>Care Tier</td><td colspan="2">Tier ${careTier.tier}</td></tr>
+    </tbody>`;
+  
+  document.getElementById('resultsPage').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  
+  // Update progress to complete
+  document.getElementById('progressWrap').style.display='block';
+  document.getElementById('progressFill').style.width='100%';
+  document.getElementById('progressPct').textContent='100%';
+  document.getElementById('progressLabel').textContent='Assessment complete';
+  document.querySelectorAll('.step-dot').forEach(d=>d.classList.add('done'));
+}
+
+function escHtml(s){
+  if(typeof s!=='string') return String(s);
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+init();
+</script>
+</body>
+</html>
